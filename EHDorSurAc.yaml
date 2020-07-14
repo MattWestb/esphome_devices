@@ -20,7 +20,7 @@ remote_receiver:
     number: D5
     inverted: True
     mode: INPUT_PULLUP
-  tolerance: 50%
+  tolerance: 45%
   dump: raw
 
 remote_transmitter:
@@ -49,3 +49,7 @@ sensor:
     humidity:
       name: Humedad Dormitorio Sur
     update_interval: 60s
+
+binary_sensor:
+  - platform: status
+    name: "Dormitorio Sur AC Status"

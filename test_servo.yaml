@@ -1,7 +1,8 @@
 esphome:
-  name: test_servo
+  name: test_local2
   platform: ESP8266
   board: nodemcuv2
+  esp8266_restore_from_flash: true
 
 wifi:
   ssid: !secret wifi_ssid
@@ -15,41 +16,74 @@ logger:
   level: VERY_VERBOSE
 
 # Enable Home Assistant API
-api:
 
 ota:
 
+api:
+
 servo:
-  - id: my_servo
+  - id: test_servo
     output: pwm_output
+    min_level: 5%
+    max_level: 10%
+    restore: true
 
+
+# Example output platform
+# On ESP32, use ledc output
 output:
-  - platform: gpio
-    pin: D1
-    inverted: False
-    id: gpio_d1_led
-
   - platform: esp8266_pwm
     id: pwm_output
-    pin: D7
+    pin: D0
     frequency: 50 Hz
+
+globals:
+  - id: servo_level
+    type: float
 
 binary_sensor:
   - platform: gpio
-    pin: D8
-    name: "Multisensor Motion"
-    device_class: motion
-    on_press:
-      then:
-        - output.turn_on: gpio_d1_led
-        - servo.write:
-            id: my_servo
-            level: 70.0%
-    on_release:
-      then:
-        - output.turn_off: gpio_d1_led
-        - servo.write:
-            id: my_servo
-            level: -70.0%
+    pin:
+      number: D1
+      mode: INPUT_PULLUP
+    id: btn_up
+    filters:
+      - invert:
 
+  - platform: gpio
+    pin:
+      number: D2
+      mode: INPUT_PULLUP
+    id: btn_down
+    filters:
+      - invert:
+
+  - platform: gpio
+
+    pin:
+      number: D3
+      mode: INPUT_PULLUP
+    name: "DETACH"
+    on_press:
+      - servo.detach: test_servo
+
+interval:
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            binary_sensor.is_on: btn_up
+          then:
+            lambda: |-
+              if (id(servo_level) < 1.0) id(servo_level) += 0.1;
+              id(test_servo).write(id(servo_level));
+
+
+      - if:
+          condition:
+            binary_sensor.is_on: btn_down
+          then:
+            lambda: |-
+              if (id(servo_level) > -1.0) id(servo_level) -= 0.1;
+              id(test_servo).write(id(servo_level));
 
